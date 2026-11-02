@@ -3,6 +3,7 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 plugins {
     alias(libs.plugins.kotlin.jvm)
     alias(libs.plugins.kotlin.serialization)
+    alias(libs.plugins.shadow)
     application
 }
 
@@ -39,18 +40,25 @@ kotlin {
 
 application {
     mainClass = "com.example.ApplicationKt"
-    applicationName = "app"
-    // The JVM's default heap is a quarter of the container's memory limit;
-    // a container that runs nothing but this application can give it more.
-    applicationDefaultJvmArgs = listOf("-XX:MaxRAMPercentage=75")
 }
 
-// installDist writes the application to build/install/app with bin/app as its
-// start script, which the Dockerfile copies into the image.
-distributions {
-    main {
-        distributionBaseName = "app"
-    }
+// The Wodby Java image runs one self-contained jar with `java -jar`, so the
+// build packages the application and its dependencies together in
+// build/libs/kotlin-boilerplate.jar. The jar without dependencies is marked
+// `plain`, which the image leaves out when it looks for the jar to run.
+tasks.shadowJar {
+    archiveClassifier = ""
+    mergeServiceFiles()
+}
+
+tasks.jar {
+    archiveClassifier = "plain"
+}
+
+// Only the jar is deployed: skip the zip and tar distributions the
+// application plugin would add to every build.
+tasks.named { it in setOf("distZip", "distTar", "shadowDistZip", "shadowDistTar") }.configureEach {
+    enabled = false
 }
 
 tasks.test {

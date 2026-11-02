@@ -1,19 +1,16 @@
 ARG WODBY_BASE_IMAGE
 FROM ${WODBY_BASE_IMAGE} AS builder
 
+# Download Gradle and the dependencies in their own layer, so a source change reuses them.
 ARG COPY_FROM
-WORKDIR /usr/src/app
-
-# Download Gradle and the dependencies in a layer of their own, so a change to
-# the source alone reuses them.
-COPY --chown=wodby:wodby ${COPY_FROM}/gradlew ${COPY_FROM}/settings.gradle.kts ${COPY_FROM}/build.gradle.kts ./
-COPY --chown=wodby:wodby ${COPY_FROM}/gradle gradle
-RUN sh ./gradlew --no-daemon --console=plain dependencies > /dev/null
+COPY --chown=wodby:wodby ${COPY_FROM}/gradlew ${COPY_FROM}/settings.gradle.kts ${COPY_FROM}/build.gradle.kts /usr/src/app/
+COPY --chown=wodby:wodby ${COPY_FROM}/gradle /usr/src/app/gradle
+RUN sh ./gradlew --no-daemon -q dependencies > /dev/null
 
 COPY --chown=wodby:wodby ${COPY_FROM} /usr/src/app
-RUN sh ./gradlew --no-daemon --console=plain installDist
+RUN java-build /home/wodby/app.jar
 
 FROM ${WODBY_BASE_IMAGE}
-COPY --from=builder --chown=wodby:wodby /usr/src/app/build/install/app /usr/src/app
+COPY --from=builder --chown=wodby:wodby /home/wodby/app.jar /home/wodby/app.jar
 
-CMD ["/usr/src/app/bin/app"]
+CMD ["java-app"]

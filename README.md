@@ -36,16 +36,17 @@ Set `PORT` to use a different local port.
 `src/main/resources` are packaged into the application's JAR: the page template, static assets and the Logback
 configuration.
 
-`./gradlew installDist` writes the application to `build/install/app`, with `bin/app` as its start script. The
-`Dockerfile` builds it that way and copies only the installed application into the image.
+`./gradlew assemble` writes one self-contained jar, `build/libs/kotlin-boilerplate.jar`, with the application and
+its dependencies (the Shadow plugin). That is what the Wodby Java image runs with `java -jar`. The `Dockerfile` builds
+it and copies only the jar into the image.
 
 The code is compiled for Java 21, so the application runs on both JDKs the Wodby Kotlin service offers.
 Dependency versions are in `gradle/libs.versions.toml`.
 
 ## In a Wodby development workspace
 
-The workspace builds the application with the Gradle wrapper and runs it. When a file changes, it builds again and
-restarts the application, usually within a few seconds; nothing needs to be deployed for a code change.
+The workspace builds the jar with the Gradle wrapper and runs it. When a file changes, it builds again and restarts
+the application; nothing needs to be deployed for a code change.
 
 The health endpoint intentionally avoids optional services. PostgreSQL, Valkey, and SMTP links can be enabled later
 through Wodby's documented environment variables.
