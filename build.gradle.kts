@@ -49,6 +49,11 @@ application {
 tasks.shadowJar {
     archiveClassifier = ""
     mergeServiceFiles()
+    // A bundled library (Jansi) loads native code, which Java 22 and newer
+    // warn about at startup unless the jar allows it. Java 21 ignores this.
+    manifest {
+        attributes("Enable-Native-Access" to "ALL-UNNAMED")
+    }
 }
 
 tasks.jar {

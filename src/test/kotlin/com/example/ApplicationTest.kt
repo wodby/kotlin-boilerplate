@@ -62,4 +62,14 @@ class ApplicationTest {
         val response = client.post("/api/status")
         assertEquals(HttpStatusCode.MethodNotAllowed, response.status)
     }
+
+    @Test
+    fun requestLoggingSkipsHealthAndInContainerChecks() {
+        assertTrue(isLogged("/", "10.244.0.12", onWodby = true))
+        assertTrue(!isLogged("/", "127.0.0.1", onWodby = true))
+        assertTrue(!isLogged("/", "0:0:0:0:0:0:0:1", onWodby = true))
+        assertTrue(isLogged("/", "127.0.0.1", onWodby = false))
+        assertTrue(!isLogged("/healthz", "10.244.0.12", onWodby = true))
+        assertTrue(!isLogged("/healthz", "127.0.0.1", onWodby = false))
+    }
 }
