@@ -18,6 +18,7 @@ import io.ktor.server.response.respondText
 import io.ktor.server.routing.get
 import io.ktor.server.routing.routing
 import kotlinx.serialization.Serializable
+import java.net.InetAddress
 
 @Serializable
 data class Status(val status: String, val kotlin: String, val java: String, val server: String)
@@ -42,8 +43,9 @@ fun main() {
 }
 
 fun Application.module() {
+    val onWodby = System.getenv("WODBY_APP_SERVICE_NAME") != null
     install(CallLogging) {
-        filter { call -> call.request.path() != "/healthz" }
+        filter { call -> isLogged(call.request.path(), call.request.local.remoteAddress, onWodby) }
     }
     install(ContentNegotiation) {
         json()
@@ -83,3 +85,14 @@ fun Application.module() {
         }
     }
 }
+
+// Health checks are not logged. On Wodby, neither is anything requested from
+// inside the container, such as the readiness check that requests / every few
+// seconds; requests through the gateway come from other addresses. Run
+// locally, every other request is logged.
+internal fun isLogged(path: String, remoteAddress: String, onWodby: Boolean): Boolean =
+    path != "/healthz" && !(onWodby && isLoopback(remoteAddress))
+
+// The address is an IP literal from the connection, so no name is looked up.
+private fun isLoopback(address: String): Boolean =
+    runCatching { InetAddress.getByName(address).isLoopbackAddress }.getOrDefault(false)
